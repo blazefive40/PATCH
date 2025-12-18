@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: ipssi_patch_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ipssi_patch
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: securepassword123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ipssi_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d ipssi_patch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ipssi_patch_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - NODE_ENV=production
+      - PORT=8000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=ipssi_patch
+      - DB_USER=admin
+      - DB_PASSWORD=securepassword123
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ipssi_network
+    volumes:
+      - ./backend/src:/app/src:ro
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend/my-app
+      dockerfile: Dockerfile
+    container_name: ipssi_patch_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - ipssi_network
+
+networks:
+  ipssi_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
