@@ -65,6 +65,23 @@ backend/
 
 ## 🛡️ Améliorations de sécurité
 
+**🔒 Niveau de sécurité : Production-Ready**
+
+L'application implémente une stratégie de **défense en profondeur** avec 10 couches de sécurité :
+
+1. ✅ **Protection SQL Injection** - Sequelize ORM avec requêtes paramétrées
+2. ✅ **Protection XSS** - Sanitisation avec bibliothèque `xss`
+3. ✅ **Validation des entrées** - express-validator sur tous les endpoints
+4. ✅ **Rate Limiting** - Limites par IP et par endpoint
+5. ✅ **Headers de sécurité** - Helmet.js avec CSP strict
+6. ✅ **Protection CORS** - Origines strictement contrôlées
+7. ✅ **Protection DoS** - Limite de taille des requêtes (10kb)
+8. ✅ **Gestion sécurisée des erreurs** - Pas de fuite d'informations
+9. ✅ **Variables d'environnement** - Secrets protégés
+10. ✅ **Cookies sécurisés** - HttpOnly, SameSite, Secure
+
+📄 **Documentation complète** : Voir [SECURITY.md](./SECURITY.md)
+
 ### Vulnérabilités corrigées
 
 #### 1. **Injection SQL** ❌ → ✅

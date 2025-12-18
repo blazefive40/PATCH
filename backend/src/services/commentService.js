@@ -1,4 +1,5 @@
 const { Comment } = require('../models');
+const xss = require('xss');
 
 /**
  * Service layer for Comment operations
@@ -7,12 +8,19 @@ const { Comment } = require('../models');
 
 const commentService = {
   /**
-   * Create a new comment
+   * Create a new comment with XSS protection
    * @param {string} content - Comment content
    * @returns {Promise<Object>} Created comment
    */
   async createComment(content) {
-    return await Comment.create({ content });
+    // Sanitize content to prevent XSS attacks
+    const sanitizedContent = xss(content, {
+      whiteList: {}, // No HTML tags allowed
+      stripIgnoreTag: true,
+      stripIgnoreTagBody: ['script', 'style']
+    });
+
+    return await Comment.create({ content: sanitizedContent });
   },
 
   /**

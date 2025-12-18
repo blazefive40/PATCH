@@ -12,9 +12,12 @@
   "description": "Secured IPSSI_PATCH backend with PostgreSQL, Sequelize ORM, and layered architecture",
   "dependencies": {
     "axios": "^1.13.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "csurf": "^1.11.0",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",
+    "express-rate-limit": "^7.4.1",
     "express-validator": "^7.2.1",
     "helmet": "^8.0.0",
     "pg": "^8.13.1",

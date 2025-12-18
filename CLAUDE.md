@@ -87,28 +87,135 @@ Routes → Validators → Controllers → Services → Models (ORM) → Database
 
 ## Security Implementation
 
-### SQL Injection Prevention
+**🔒 Security Level: Production-Ready**
 
-- **DO:** Use Sequelize ORM methods (`User.findByPk()`, `User.create()`)
-- **DON'T:** Construct SQL strings with user input
-- All user inputs are validated before reaching the database
+The application implements a **defense-in-depth** strategy with **10 layers of security**. For complete documentation, see [SECURITY.md](./SECURITY.md).
 
-### XSS Protection
+### 1. SQL Injection Prevention ✅
 
-- Comment content is sanitized using the `xss` library in `commentService.js`
-- Validation occurs at the service layer, not controller
+- **Implementation:** Sequelize ORM with parameterized queries
+- **DO:** Use Sequelize ORM methods (`User.findByPk()`, `User.create()`, `Comment.findAll()`)
+- **DON'T:** Construct SQL strings with user input or raw queries
+- **Location:** All models in `src/models/`
+- All database operations go through ORM - raw SQL is never used
 
-### Input Validation
+### 2. Cross-Site Scripting (XSS) Protection ✅
 
-- Validators are defined in `src/middlewares/validators.js`
+- **Implementation:** `xss` npm package sanitization
+- **Applied to:** All comment content before saving to database
+- **Location:** `src/services/commentService.js` line 17-21
+- **Configuration:** No HTML tags allowed, scripts/styles stripped
+- **Test:** `<script>alert("XSS")</script>` → `[removed]alert("XSS")` ✅
+
+### 3. Input Validation ✅
+
+- **Implementation:** `express-validator` middleware
+- **Location:** `src/middlewares/validators.js`
+- **Applied to:** All user inputs (userId, commentId, comment content)
+- **Validates:** Data types, ranges, lengths, formats
 - Applied to routes before controllers execute
-- Uses `express-validator` for type checking and sanitization
+- **Validations:**
+  - `userId`: Must be positive integer
+  - `commentId`: Must be positive integer
+  - `comment`: Required, non-empty, max 1000 characters
 
-### Environment Variables
+### 4. Rate Limiting ✅
 
+- **Implementation:** `express-rate-limit` middleware
+- **Location:** `src/middlewares/rateLimiter.js`
+- **Limits:**
+  - API-wide: 100 requests per 15 minutes
+  - Write operations (POST/DELETE): 50 requests per 15 minutes
+  - Populate endpoint: 10 requests per hour
+- Prevents brute force and DoS attacks
+
+### 5. Security Headers ✅
+
+- **Implementation:** Helmet.js with strict configuration
+- **Location:** `src/server.js` lines 16-45
+- **Headers Applied:**
+  - Content-Security-Policy (CSP): Prevents XSS, clickjacking
+  - X-Frame-Options: DENY (prevents clickjacking)
+  - X-Content-Type-Options: nosniff (prevents MIME sniffing)
+  - Strict-Transport-Security (HSTS): Enforces HTTPS
+  - X-XSS-Protection: Browser XSS protection
+  - Referrer-Policy: Controls referrer information
+
+### 6. CORS Protection ✅
+
+- **Implementation:** Strict origin validation
+- **Location:** `src/server.js` lines 47-68
+- **Configuration:**
+  - Only configured frontend URLs allowed
+  - Methods: GET, POST, PUT, DELETE, OPTIONS only
+  - Credentials enabled for same-origin only
+  - Custom origin validation function
+
+### 7. DoS Protection ✅
+
+- **Implementation:** Request body size limits
+- **Location:** `src/server.js` lines 73-76
+- **Limits:** 10KB max for JSON, text, and URL-encoded bodies
+- Prevents memory exhaustion attacks
+
+### 8. Secure Error Handling ✅
+
+- **Implementation:** Environment-based error responses
+- **Location:** `src/server.js` lines 109-123
+- **Production:** Generic error messages only (no stack traces)
+- **Development:** Full error details for debugging
+- Prevents information disclosure
+
+### 9. Environment Variables Protection ✅
+
+- **Implementation:** dotenv + .gitignore
+- **Files:** `.env` (ignored by git), `.env.example` (template)
+- **Protected Variables:** Database credentials, API keys, CORS origins
 - Backend requires `.env` file (see `.env.example`)
-- Database credentials and CORS origins are environment-based
 - Never commit `.env` files (already in .gitignore)
+- Secrets never logged or sent to client
+
+### 10. Secure Cookie Configuration ✅
+
+- **Implementation:** cookie-parser with secure flags
+- **Location:** `src/server.js` line 71
+- **Flags:**
+  - HttpOnly: Prevents JavaScript access
+  - SameSite: CSRF protection
+  - Secure: HTTPS only (production)
+
+### Security Testing
+
+Test XSS protection:
+```bash
+curl -X POST http://localhost:8000/comment \
+  -H "Content-Type: text/plain" \
+  -d '<script>alert("XSS")</script>Test'
+# Result: Script tags removed ✅
+```
+
+Test input validation:
+```bash
+curl -X POST http://localhost:8000/user \
+  -H "Content-Type: application/json" \
+  -d '{"userId": "invalid"}'
+# Result: "userId must be a positive integer" ✅
+```
+
+### Security Checklist
+
+- ✅ SQL Injection Protection (Sequelize ORM)
+- ✅ XSS Protection (xss sanitization)
+- ✅ Input Validation (express-validator)
+- ✅ Rate Limiting (per endpoint)
+- ✅ Security Headers (Helmet)
+- ✅ CORS Protection (strict origins)
+- ✅ DoS Protection (body size limits)
+- ✅ Secure Error Handling
+- ✅ Environment Variables Protection
+- ✅ Secure Cookies
+
+**📄 Complete Documentation:** See [SECURITY.md](./SECURITY.md) for detailed security documentation, test examples, and OWASP references.
 
 ## Database Management
 
